@@ -22,7 +22,8 @@ pipeline {
         stage('Install') {
             steps {
                 sh 'npm install'
-            }
+		sh 'export PATH=$PATH:/usr/local/bin && npm install'
+         }
         }
 
         stage('Test') {
