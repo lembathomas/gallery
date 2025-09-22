@@ -1,30 +1,61 @@
 pipeline {
-  agent any
+    agent any
 
-  triggers {
-    githubPush()  // triggers build when you push to GitHub
-  }
-
-  stages {
-    stage('Install') {
-      steps {
-        sh 'npm install'
-      }
+    environment {
+        // Change these values to your actual details
+        RENDER_URL = 'https://gallery.onrender.com'   // your Render deployment URL
+        SLACK_CHANNEL = '#all-rc'                // your Slack channel name
+        EMAIL = 'lembathomas@gmail.com'             // your email for failure notifications
     }
 
-    stage('Build') {
-      steps {
-        sh 'node server.js &'
-      }
+    triggers {
+        githubPush()   // auto-trigger on push
     }
 
-    stage('Deploy to Render') {
-      steps {
-        // Deployment strategy depends on Render setup
-        // Usually Render auto-deploys when GitHub repo updates
-        echo "Triggering Render deployment..."
-      }
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/lembathomas/gallery.git'
+            }
+        }
+
+        stage('Install') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'npm test'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'node server.js &'
+            }
+        }
+
+        stage('Deploy to Render') {
+            steps {
+                echo "Render will auto-deploy since the repo is connected"
+            }
+        }
     }
-  }
+
+    post {
+        failure {
+            mail to: "${env.EMAIL}",
+                 subject: "❌ Build Failed: #${env.BUILD_NUMBER}",
+                 body: "Build ${env.BUILD_NUMBER} failed. Check Jenkins for details."
+        }
+
+        success {
+            slackSend(
+                channel: "${env.SLACK_CHANNEL}",
+                message: "✅ Build #${env.BUILD_NUMBER} succeeded! Live at: ${env.RENDER_URL}"
+            )
+        }
+    }
 }
-
