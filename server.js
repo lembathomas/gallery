@@ -52,5 +52,8 @@ app.listen(PORT,() =>{
     console.log(`Server is listening at http://localhost:${PORT}`)
 });
 
-
+const mongoose = require("mongoose");
+if (process.env.NODE_ENV !== "test") {
+  mongoose.connect(process.env.MONGO_URI);
+}
 module.exports = app;
