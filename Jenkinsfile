@@ -1,20 +1,24 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs "node16"   // Matches the name you gave in Jenkins tools
+    }
+
     environment {
         RENDER_URL   = 'https://gallery.onrender.com'
-        SLACK_CHANNEL = '#all-rc'                   // Slack channel
+        SLACK_CHANNEL = '#all-rc'
         EMAIL        = 'lembathomas@gmail.com'
     }
 
     triggers {
-        githubPush()   // auto-trigger on push
+        githubPush()
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/lembathomas/gallery.git'
+                git branch: 'master', url: 'https://github.com/lembathomas/gallery.git'
             }
         }
 
@@ -26,14 +30,12 @@ pipeline {
 
         stage('Test') {
             steps {
-                // Will run if tests exist (after merging test branch into main)
                 sh 'npm test'
             }
         }
 
         stage('Build') {
             steps {
-                // Optional: run build if package.json has a build script
                 sh 'npm run build || echo "No build script, skipping..."'
             }
         }
@@ -59,4 +61,3 @@ pipeline {
         }
     }
 }
-
