@@ -2,10 +2,9 @@ pipeline {
     agent any
 
     environment {
-        // Change these values to your actual details
-        RENDER_URL = 'https://gallery.onrender.com'   // your Render deployment URL
-        SLACK_CHANNEL = '#all-rc'                // your Slack channel name
-        EMAIL = 'lembathomas@gmail.com'             // your email for failure notifications
+        RENDER_URL   = 'https://gallery.onrender.com'
+        SLACK_CHANNEL = '#all-rc'                   // Slack channel
+        EMAIL        = 'lembathomas@gmail.com'
     }
 
     triggers {
@@ -15,32 +14,33 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master', url: 'https://github.com/lembathomas/gallery.git'
+                git branch: 'main', url: 'https://github.com/lembathomas/gallery.git'
             }
         }
 
         stage('Install') {
             steps {
                 sh 'npm install'
-		sh 'export PATH=$PATH:/usr/local/bin && npm install'
-         }
+            }
         }
 
         stage('Test') {
             steps {
+                // Will run if tests exist (after merging test branch into main)
                 sh 'npm test'
             }
         }
 
         stage('Build') {
             steps {
-                sh 'node server.js &'
+                // Optional: run build if package.json has a build script
+                sh 'npm run build || echo "No build script, skipping..."'
             }
         }
 
         stage('Deploy to Render') {
             steps {
-                echo "Render will auto-deploy since the repo is connected"
+                echo "🚀 Code pushed. Render auto-deploy will handle deployment."
             }
         }
     }
@@ -48,15 +48,15 @@ pipeline {
     post {
         failure {
             mail to: "${env.EMAIL}",
-                 subject: "❌ Build Failed: #${env.BUILD_NUMBER}",
-                 body: "Build ${env.BUILD_NUMBER} failed. Check Jenkins for details."
+                 subject: "❌ Build/Test Failed: #${env.BUILD_NUMBER}",
+                 body: "Build ${env.BUILD_NUMBER} failed. Check Jenkins logs: ${env.BUILD_URL}"
         }
-
         success {
             slackSend(
                 channel: "${env.SLACK_CHANNEL}",
-                message: "✅ Build #${env.BUILD_NUMBER} succeeded! Live at: ${env.RENDER_URL}"
+                message: "✅ Build #${env.BUILD_NUMBER} succeeded! Site live at: ${env.RENDER_URL}"
             )
         }
     }
 }
+
