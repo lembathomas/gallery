@@ -7,9 +7,6 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <title>Darkroom</title>
-    <h1>MILESTONE 2</h1>
-    <h1>MILESTONE 3</h1>
-    <h1>MILESTONE 4</h1>
 </head>
 <body style="background-color: #f4f4f4;">
   <div class="navbar-fixed">
@@ -32,7 +29,16 @@
   </div>
     
     <div class="container">
-        <h1>Image Upload </h1>
+        <div class="center-align">
+          
+          <h1>MILESTONE 2</h1>
+          <hr>
+          <h1>MILESTONE 3</h1>
+          <hr>
+          <h1>MILESTONE 4</h1> 
+          <hr>
+          <h1>Image Upload</h1>
+        </div>
         <%= typeof msg != 'undefined' ? msg : '' %>
         <form action="/upload" method = "POST" enctype="multipart/form-data">
             <div class="file-field input-field">
@@ -70,4 +76,3 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 </body>
 </html>
-                
