@@ -1,7 +1,7 @@
 pipeline {
     agent any
         tools {
-          nodejs 'nodeJs-24'
+          nodejs 'nodjs24'
         }
 
     triggers {
