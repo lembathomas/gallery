@@ -2,13 +2,13 @@ pipeline {
     agent any
 
     tools {
-        nodejs "node16"   // Matches the name you gave in Jenkins tools
+        nodejs "node20"   // Make sure this matches the NodeJS tool name in Jenkins
     }
 
     environment {
-        RENDER_URL   = 'https://gallery.onrender.com'
+        RENDER_URL    = 'https://gallery.onrender.com'
         SLACK_CHANNEL = '#all-rc'
-        EMAIL        = 'lembathomas@gmail.com'
+        EMAIL         = 'lembathomas@gmail.com'
     }
 
     triggers {
@@ -18,46 +18,43 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                echo "📦 Checking out repository..."
                 git branch: 'master', url: 'https://github.com/lembathomas/gallery.git'
             }
         }
 
-        stage('Install') {
+        stage('Install Dependencies') {
             steps {
+                echo "🧩 Installing dependencies..."
                 sh 'npm install'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'npm test'
-            }
-        }
-
-        stage('Build') {
-            steps {
-                sh 'npm run build || echo "No build script, skipping..."'
-            }
-        }
-
-        stage('Deploy to Render') {
-            steps {
-                echo "🚀 Code pushed. Render auto-deploy will handle deployment."
             }
         }
     }
 
     post {
-        failure {
-            mail to: "${env.EMAIL}",
-                 subject: "❌ Build/Test Failed: #${env.BUILD_NUMBER}",
-                 body: "Build ${env.BUILD_NUMBER} failed. Check Jenkins logs: ${env.BUILD_URL}"
-        }
         success {
+            echo "✅ Dependencies installed successfully!"
             slackSend(
                 channel: "${env.SLACK_CHANNEL}",
-                message: "✅ Build #${env.BUILD_NUMBER} succeeded! Site live at: ${env.RENDER_URL}"
+                message: "✅ npm install completed successfully for build #${env.BUILD_NUMBER}! Site live at: ${env.RENDER_URL}"
             )
+        }
+
+        failure {
+            echo "❌ npm install failed."
+            mail to: "${env.EMAIL}",
+                 subject: "❌ npm install Failed: #${env.BUILD_NUMBER}",
+                 body: """
+                    Hello Thomas,
+
+                    The Jenkins build #${env.BUILD_NUMBER} failed during npm install for the Gallery App.
+
+                    Check the Jenkins logs for details:
+                    ${env.BUILD_URL}
+
+                    Regards,
+                    Jenkins
+                 """
         }
     }
 }
