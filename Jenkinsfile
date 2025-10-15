@@ -1,60 +1,77 @@
 pipeline {
     agent any
-
-    tools {
-        nodejs "node20"   // Make sure this matches the NodeJS tool name in Jenkins
-    }
-
-    environment {
-        RENDER_URL    = 'https://gallery.onrender.com'
-        SLACK_CHANNEL = '#all-rc'
-        EMAIL         = 'lembathomas@gmail.com'
-    }
+        tools {
+          nodejs 'nodeJs-24'
+        }
 
     triggers {
-        githubPush()
+        githubPush() // Trigger build on GitHub push
     }
-
+// Build Stages
     stages {
         stage('Checkout') {
             steps {
-                echo "📦 Checking out repository..."
                 git branch: 'master', url: 'https://github.com/lembathomas/gallery.git'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo "🧩 Installing dependencies..."
                 sh 'npm install'
             }
         }
-    }
 
+        stage('Running Test') {
+            steps {
+                sh 'npm test'
+            }
+        }
+
+        stage('Deploy to Render') {
+            steps {
+                withCredentials([string(credentialsId: 'render-deploy-hook', variable: 'DEPLOY_HOOK')]) {
+                    sh 'curl -X POST $DEPLOY_HOOK'
+                }
+            }
+        }
+    }
     post {
-        success {
-            echo "✅ Dependencies installed successfully!"
-            slackSend(
-                channel: "${env.SLACK_CHANNEL}",
-                message: "✅ npm install completed successfully for build #${env.BUILD_NUMBER}! Site live at: ${env.RENDER_URL}"
-            )
+        always {
+            echo 'Notification stage executed.'
         }
+        // Success deployment notification
+        success {
+            emailext(
+                to: 'lembathomas@gmail.com',
+                subject: "Build: ${currentBuild.fullDisplayName} succeeded!\n View deployed app: https://gallery-f7s2.onrender.com",
+                body: "The deployment was successful. Check the details at ${env.BUILD_URL}"
+            )
 
+            slackSend(
+                channel: '#all-rc',
+                tokenCredentialId: 'slack-webhook2',
+                color: 'good',
+                message: "Build: ${currentBuild.fullDisplayName} succeeded!\n View deployed app: https://gallery-f7s2.onrender.com"
+            )
+
+        }
+        // Failure deployment notification
         failure {
-            echo "❌ npm install failed."
-            mail to: "${env.EMAIL}",
-                 subject: "❌ npm install Failed: #${env.BUILD_NUMBER}",
-                 body: """
-                    Hello Thomas,
+            // email notification
+            emailext(
+                to: 'lembathomas@gmail.com',
+                subject: "Failed Deployment: ${currentBuild.fullDisplayName}",
+                body: "The deployment failed. Check the details at ${env.BUILD_URL}"
+            )
+            // slack notification
+            slackSend(
+                channel: '#all-rc',
+                tokenCredentialId: 'slack-webhook2',
+                color: 'danger',
+                message: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER} failed.\n${env.BUILD_URL}"
+            )
 
-                    The Jenkins build #${env.BUILD_NUMBER} failed during npm install for the Gallery App.
-
-                    Check the Jenkins logs for details:
-                    ${env.BUILD_URL}
-
-                    Regards,
-                    Jenkins
-                 """
         }
     }
+
 }
