@@ -1,13 +1,13 @@
 pipeline {
     agent any
-        tools {
-          nodejs 'nodjs24'
-        }
+    tools {
+        nodejs 'nodjs24'
+    }
 
     triggers {
-        githubPush() // Trigger build on GitHub push
+        githubPush()
     }
-// Build Stages
+
     stages {
         stage('Checkout') {
             steps {
@@ -26,52 +26,42 @@ pipeline {
                 sh 'npm test'
             }
         }
-
-        stage('Deploy to Render') {
-            steps {
-                withCredentials([string(credentialsId: 'render-deploy-hook', variable: 'DEPLOY_HOOK')]) {
-                    sh 'curl -X POST $DEPLOY_HOOK'
-                }
-            }
-        }
+        // Render deployment stage removed
     }
+
     post {
         always {
             echo 'Notification stage executed.'
         }
-        // Success deployment notification
+
         success {
             emailext(
                 to: 'lembathomas@gmail.com',
-                subject: "Build: ${currentBuild.fullDisplayName} succeeded!\n View deployed app: https://gallery-f7s2.onrender.com",
-                body: "The deployment was successful. Check the details at ${env.BUILD_URL}"
+                subject: "Build: ${currentBuild.fullDisplayName} succeeded! View deployed app: https://gallery-f7s2.onrender.com",
+                body: "The deployment was successful. Check build details at ${env.BUILD_URL}"
             )
 
             slackSend(
                 channel: '#all-rc',
                 tokenCredentialId: 'slack-webhook2',
                 color: 'good',
-                message: "Build: ${currentBuild.fullDisplayName} succeeded!\n View deployed app: https://gallery-f7s2.onrender.com"
+                message: "Build: ${currentBuild.fullDisplayName} succeeded! View deployed app: https://gallery-f7s2.onrender.com"
             )
-
         }
-        // Failure deployment notification
+
         failure {
-            // email notification
             emailext(
                 to: 'lembathomas@gmail.com',
                 subject: "Failed Deployment: ${currentBuild.fullDisplayName}",
-                body: "The deployment failed. Check the details at ${env.BUILD_URL}"
+                body: "The deployment failed. Check details at ${env.BUILD_URL}"
             )
-            // slack notification
+
             slackSend(
                 channel: '#all-rc',
                 tokenCredentialId: 'slack-webhook2',
                 color: 'danger',
-                message: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER} failed.\n${env.BUILD_URL}"
+                message: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER} failed. ${env.BUILD_URL}"
             )
-
         }
     }
-
 }
